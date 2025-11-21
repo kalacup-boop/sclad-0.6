@@ -1,0 +1,15 @@
+[theme]
+# Основной цвет Streamlit (например, для кнопок, прогресс-баров)
+primaryColor="#007ACC" 
+
+# Цвет фона: Темный (для Dark Mode)
+backgroundColor="#333333"
+
+# Цвет вторичного фона (например, сайдбар, блоки кода). Светло-серый, чтобы отличать от основного фона.
+secondaryBackgroundColor="#282828"
+
+# Цвет текста: Светлый (для Dark Mode)
+textColor="#FFFFFF" 
+
+# Шрифт
+font="sans serif"
