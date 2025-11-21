@@ -9,8 +9,8 @@ import io
 # Для чтения Excel по URL
 import requests
 
-# Для нечеткого сопоставления строк
-# Убедитесь, что в requirements.txt у вас: thefuzz
+# Для нечеткого сопоставления строк (ИСПРАВЛЕНО: импорт "thefuzz" вместо "fuzzywuzzy")
+# Убедитесь, что в requirements.txt есть thefuzz и python-Levenshtein
 from thefuzz import fuzz
 from thefuzz import process
 
@@ -24,59 +24,27 @@ STOCK_URL_KEY = 'last_stock_url'
 # Список сотрудников
 WORKERS_LIST = ["Выберите сотрудника...", "Хазбулат Р.", "Никулин Д.", "Волыкина Е.", "Ивонин К.", "Никонов Е.", "Губанов А.", "Яшковец В."] 
 # Возвращена рабочая ссылка на изображение
-IMAGE_URL = "https://i.postimg.cc/8P1LJY52/photo-2025-11-20-23-07-29-(1).jpg"
+IMAGE_URL = "https://i.post.cc/26B6zY8b/photo-2025-11-20-23-07-29-1-2.jpg"
 
-
-# --- ФАЙЛ ТЕМЫ И ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ ---
-# Базовая конфигурация
-CONFIG_TOML_CONTENT_BASE = """
-[theme]
-primaryColor="#007ACC" 
-secondaryBackgroundColor="#F0F2F6" 
-font="sans serif"
-"""
-
-# Создание файла конфигурации и установка темы
-def create_config_file(mode):
-    config_dir = ".streamlit"
-    config_path = os.path.join(config_dir, "config.toml")
-    
-    # Исправление контраста: Явно задаем цвета фона и текста для каждой темы
-    if mode == 'Светлая':
-        theme_config = "backgroundColor='#FFFFFF'\n"
-        theme_config += "textColor='#1A1A1A'\n" # Темный текст
-    else: # Темная
-        theme_config = "backgroundColor='#333333'\n" # Немного более светлый темный фон для читаемости
-        theme_config += "textColor='#FFFFFF'\n" # Светлый текст
-        
-    final_content = CONFIG_TOML_CONTENT_BASE + theme_config
-    
-    if not os.path.exists(config_dir):
-        os.makedirs(config_dir)
-    
-    with open(config_path, "w") as f:
-        f.write(final_content)
-        
-# Инициализация темы при первом запуске
-if 'theme_mode' not in st.session_state:
-    st.session_state['theme_mode'] = 'Светлая'
-    create_config_file('Светлая') 
-
-# --- КОНЕЦ ФАЙЛА ТЕМЫ ---
-
+# --- ТЕМА (УДАЛЕНА ЛОГИКА ПЕРЕКЛЮЧЕНИЯ - Настройки в .streamlit/config.toml) ---
+# Настройки темы теперь статичны в .streamlit/config.toml (Темная по умолчанию)
 
 st.set_page_config(page_title="🏗️ Склад обьекта", layout="wide")
 
-# --- АВТОРИЗАЦИЯ ---
+# --- ФУНКЦИИ АВТОРИЗАЦИИ (ИСПРАВЛЕНИЕ: Вынесение logout) ---
+
+def logout():
+    """Сбрасывает состояние аутентификации и перезапускает приложение."""
+    st.session_state['authenticated'] = False
+    st.query_params.clear()
+    # ИСПРАВЛЕНИЕ: Используем st.experimental_rerun() или st.rerun() 
+    # для гарантированного перезапуска после сброса состояния
+    st.rerun() 
+
+
 def check_password():
     is_logged_in = st.session_state.get('authenticated', False)
     
-    if not is_logged_in:
-        params = st.query_params
-        if params.get("auth") == "true":
-            st.session_state['authenticated'] = True
-            is_logged_in = True
-
     if not is_logged_in:
         st.title("🔐 Вход в систему")
         
@@ -84,20 +52,17 @@ def check_password():
         c1, c2 = st.columns([1, 2])
 
         with c1:
-            # Поля ввода (слева)
             username = st.text_input("Логин")
             password = st.text_input("Пароль", type="password")
             if st.button("Войти", type="primary"):
-                # Пароль установлен на "admin"
                 if username == "admin" and password == "admin": 
                     st.session_state['authenticated'] = True
-                    st.query_params["auth"] = "true"
                     st.rerun()
                 else:
                     st.error("Неверный логин или пароль")
         
         with c2:
-            # ИСПРАВЛЕНИЕ: Удален use_container_width=True для сохранения исходного размера изображения
+            # ИСПРАВЛЕНИЕ: Удален use_container_width=True
             st.image(IMAGE_URL, caption='Рабочий кот') 
             
         return False
@@ -121,7 +86,7 @@ def find_best_match(query, choices, threshold):
     
     if result and result[1] >= threshold:
         return result[0], result[1]
-    return None, 0 # Если совпадение ниже порога, возвращаем None
+    return None, 0 
 
 # --- БАЗА ДАННЫХ (без изменений) ---
 def get_connection():
@@ -263,7 +228,7 @@ def undo_shipment(shipment_id, current_user):
     conn.close()
     return False
 
-# --- НОВАЯ ФУНКЦИЯ ОБРАТНОГО ВЫЗОВА ДЛЯ ST.FORM (без изменений) ---
+# --- ФУНКЦИЯ ОБРАТНОГО ВЫЗОВА ДЛЯ ST.FORM (без изменений) ---
 def submit_entry_callback_form(material_id, qty, user, current_pid, store, doc_number, note):
     # 1. Проверка
     if user == "Выберите сотрудника..." or not user:
@@ -490,20 +455,8 @@ if not check_password():
 
 init_db()
 
-# --- САЙДБАР (С улучшенными иконками и переключателем темы) ---
+# --- САЙДБАР ---
 with st.sidebar:
-    
-    # --- ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ ---
-    st.header("🌓 Настройка темы")
-    # Используем key, чтобы Streamlit знал, что это та же переменная
-    new_mode = st.radio("Выберите режим:", ('Светлая', 'Темная'), key='theme_switcher', index=0 if st.session_state['theme_mode'] == 'Светлая' else 1)
-    
-    if new_mode != st.session_state['theme_mode']:
-        st.session_state['theme_mode'] = new_mode
-        create_config_file(new_mode)
-        st.rerun() 
-    
-    st.divider()
     
     st.header("📂 Управление объектами")
     new_name = st.text_input("Имя нового объекта")
@@ -550,6 +503,7 @@ with st.sidebar:
                 st.rerun()
 
     st.divider()
+    # Кнопка выхода вызывает функцию logout()
     if st.button("🚪 Выйти из аккаунта"):
         logout()
 
@@ -682,7 +636,7 @@ else:
                 
                 st.divider()
 
-                # --- ВВОД ПРИХОДА (ИСПОЛЬЗУЕМ ST.FORM) ---
+                # --- ВВОД ПРИХОДА (ИСПРАВЛЕНА ЛОГИКА ФАКТА) ---
                 
                 # Инициализация ключей для автоматической очистки
                 if f'val_{pid}' not in st.session_state: st.session_state[f'val_{pid}'] = 0.0
@@ -705,7 +659,7 @@ else:
                         s_id = opts[s_name]
                         curr = data_df[data_df['id']==s_id].iloc[0]
                         
-                        # Исправленное отображение плана/факта
+                        # Отображение плана/факта
                         st.markdown(f"**План:** `{curr['planned_qty']:.2f} {curr['unit']}`", unsafe_allow_html=True)
                         
                         if curr['total'] > curr['planned_qty']:
@@ -768,8 +722,10 @@ else:
                     
                     undo_shipment(st.session_state['last_shipment_id'], current_user)
                     
-                    del st.session_state['last_shipment_id']
-                    del st.session_state['last_shipment_pid']
+                    # Сброс ключей отмены
+                    if 'last_shipment_id' in st.session_state: del st.session_state['last_shipment_id']
+                    if 'last_shipment_pid' in st.session_state: del st.session_state['last_shipment_pid']
+                    
                     st.toast("Последний приход отменен и добавлен в историю!", icon="↩️")
                     time.sleep(0.5)
                     st.rerun()
@@ -880,7 +836,7 @@ else:
                             if ostalos > 0:
                                 st.info(summary)
                             elif ostalos < 0:
-                                st.error(summary) # Используем error для перерасхода
+                                st.error(summary)
                             else:
                                 st.success(summary)
 
