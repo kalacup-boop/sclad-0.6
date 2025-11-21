@@ -21,7 +21,11 @@ FUZZY_MATCH_THRESHOLD = 80
 STOCK_URL_KEY = 'last_stock_url' 
 
 # Список сотрудников
-WORKERS_LIST = ["Выберите сотрудника...", "Хазбулат Р.", "Никулин Д.", "Волыкина Е.", "Ивонин К.", "Никонов Е.", "Губанов А.", "Яшковец В."]
+# ИСПРАВЛЕНИЕ: Фамилия изменена на Никонов Е.
+WORKERS_LIST = ["Выберите сотрудника...", "Хазбулат Р.", "Никулин Д.", "Волыкина Е.", "Ивонин К.", "Никонов Е.", "Губанов А.", "Яшковец В."] 
+# УСТАНОВКА НОВОЙ ССЫЛКИ НА ИЗОБРАЖЕНИЕ
+IMAGE_URL = "https://i.postimg.cc/8P1LJY52/photo-2025-11-20-23-07-29-(1).jpg"
+
 
 # --- ФАЙЛ ТЕМЫ ---
 # Для красоты (должен быть создан файл .streamlit/config.toml)
@@ -73,7 +77,8 @@ def check_password():
             username = st.text_input("Логин")
             password = st.text_input("Пароль", type="password")
             if st.button("Войти", type="primary"):
-                if username == "admin" and password == "1234567a":
+                # ИЗМЕНЕНИЕ: Пароль установлен на "admin"
+                if username == "admin" and password == "admin": 
                     st.session_state['authenticated'] = True
                     st.query_params["auth"] = "true"
                     st.rerun()
@@ -81,8 +86,7 @@ def check_password():
                     st.error("Неверный логин или пароль")
         
         with c2:
-            IMAGE_URL = "https://i.post.cc/26B6zY8b/photo-2025-11-20-23-07-29-1-2.jpg"
-            st.image(IMAGE_URL, caption='Рабочий кот', use_container_width=True) # ИСПРАВЛЕНО
+            st.image(IMAGE_URL, caption='Рабочий кот', use_container_width=True) 
             
         return False
     return True
@@ -689,9 +693,18 @@ else:
                         s_id = opts[s_name]
                         curr = data_df[data_df['id']==s_id].iloc[0]
                         
-                        # Выделение остатка
-                        ost_class = "success" if curr['total'] >= curr['planned_qty'] else "warning"
-                        st.markdown(f"**План:** `{curr['planned_qty']:.2f} {curr['unit']}` | **Факт:** `<span style='color: var(--{ost_class}); font-weight: bold;'>{curr['total']:.2f}</span>`", unsafe_allow_html=True)
+                        # ИСПРАВЛЕНИЕ: Используем HEX-коды для надежности, чтобы избежать ошибки HTML
+                        if curr['total'] > curr['planned_qty']:
+                            color_hex = "#DC3545" # Красный
+                        elif curr['total'] < curr['planned_qty']:
+                            color_hex = "#FFC107" # Оранжевый/Желтый
+                        else:
+                            color_hex = "#28A745" # Зеленый
+
+                        st.markdown(
+                            f"**План:** `{curr['planned_qty']:.2f} {curr['unit']}` | **Факт:** `<span style='color: {color_hex}; font-weight: bold;'>{curr['total']:.2f}</span>`", 
+                            unsafe_allow_html=True
+                        )
                         
                     with c2:
                         # Используем специальный ключ для автоочистки
@@ -756,7 +769,7 @@ else:
                 
                 with st.expander("🔍 **Сравнение с фактическими остатками склада (по URL)**"):
                     
-                    #st.info(f"Сравнение будет произведено с порогом сходства **{FUZZY_MATCH_THRESHOLD}%**.")
+                    st.info(f"Сравнение будет произведено с порогом сходства **{FUZZY_MATCH_THRESHOLD}%**.")
                     
                     col_url, col_btn = st.columns([4, 1])
                     
