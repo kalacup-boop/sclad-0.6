@@ -23,7 +23,7 @@ STOCK_URL_KEY = 'last_stock_url'
 # Список сотрудников
 WORKERS_LIST = ["Выберите сотрудника...", "Хазбулат Р.", "Никулин Д.", "Волыкина Е.", "Ивонин К.", "Никонов Е.", "Губанов А.", "Яшковец В."] 
 # Возвращена рабочая ссылка на изображение
-IMAGE_URL = "https://i.post.cc/26B6zY8b/photo-2025-11-20-23-07-29-1-2.jpg"
+IMAGE_URL = "https://i.postimg.cc/8P1LJY52/photo-2025-11-20-23-07-29-(1).jpg"
 
 
 # --- ФАЙЛ ТЕМЫ И ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ ---
@@ -940,3 +940,4 @@ else:
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                             key=f"dl_{pid}"
                         )
+
