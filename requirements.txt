@@ -1,6 +1,7 @@
-# requirements.txt
 streamlit
 pandas
 requests
+# thefuzz теперь официально требует python-Levenshtein для оптимизации
 thefuzz
-openpyxl 
+python-Levenshtein
+openpyxl
