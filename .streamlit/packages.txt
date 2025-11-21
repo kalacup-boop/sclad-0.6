@@ -1,0 +1,2 @@
+# .streamlit/packages.txt
+build-essential
