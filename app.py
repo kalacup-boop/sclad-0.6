@@ -10,6 +10,7 @@ import io
 import requests
 
 # Для нечеткого сопоставления строк
+# Убедитесь, что в requirements.txt у вас: thefuzz
 from thefuzz import fuzz
 from thefuzz import process
 
@@ -27,12 +28,11 @@ IMAGE_URL = "https://i.postimg.cc/8P1LJY52/photo-2025-11-20-23-07-29-(1).jpg"
 
 
 # --- ФАЙЛ ТЕМЫ И ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ ---
-# Базовая конфигурация без фона
+# Базовая конфигурация
 CONFIG_TOML_CONTENT_BASE = """
 [theme]
 primaryColor="#007ACC" 
-secondaryBackgroundColor="#F0F2F6"
-textColor="#1A1A1A" 
+secondaryBackgroundColor="#F0F2F6" 
 font="sans serif"
 """
 
@@ -41,11 +41,13 @@ def create_config_file(mode):
     config_dir = ".streamlit"
     config_path = os.path.join(config_dir, "config.toml")
     
-    # Установка цвета фона в зависимости от выбранного режима
+    # Исправление контраста: Явно задаем цвета фона и текста для каждой темы
     if mode == 'Светлая':
         theme_config = "backgroundColor='#FFFFFF'\n"
+        theme_config += "textColor='#1A1A1A'\n" # Темный текст
     else: # Темная
-        theme_config = "backgroundColor='#1E1E1E'\n"
+        theme_config = "backgroundColor='#333333'\n" # Немного более светлый темный фон для читаемости
+        theme_config += "textColor='#FFFFFF'\n" # Светлый текст
         
     final_content = CONFIG_TOML_CONTENT_BASE + theme_config
     
@@ -58,7 +60,6 @@ def create_config_file(mode):
 # Инициализация темы при первом запуске
 if 'theme_mode' not in st.session_state:
     st.session_state['theme_mode'] = 'Светлая'
-    # Применяем тему, чтобы Streamlit знал о ней до reran
     create_config_file('Светлая') 
 
 # --- КОНЕЦ ФАЙЛА ТЕМЫ ---
@@ -87,7 +88,7 @@ def check_password():
             username = st.text_input("Логин")
             password = st.text_input("Пароль", type="password")
             if st.button("Войти", type="primary"):
-                # ИЗМЕНЕНИЕ: Пароль установлен на "admin"
+                # Пароль установлен на "admin"
                 if username == "admin" and password == "admin": 
                     st.session_state['authenticated'] = True
                     st.query_params["auth"] = "true"
@@ -96,17 +97,13 @@ def check_password():
                     st.error("Неверный логин или пароль")
         
         with c2:
-            st.image(IMAGE_URL, caption='Рабочий кот', use_container_width=True) 
+            # ИСПРАВЛЕНИЕ: Удален use_container_width=True для сохранения исходного размера изображения
+            st.image(IMAGE_URL, caption='Рабочий кот') 
             
         return False
     return True
 
-def logout():
-    st.session_state['authenticated'] = False
-    st.query_params.clear()
-    st.rerun()
-
-# --- ЭКСПОРТ В EXCEL ---
+# --- ЭКСПОРТ В EXCEL (без изменений) ---
 def to_excel(df):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -114,7 +111,7 @@ def to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
-# --- НОВАЯ ФУНКЦИЯ ДЛЯ НЕЧЕТКОГО СОПОСТАВЛЕНИЯ ---
+# --- НОВАЯ ФУНКЦИЯ ДЛЯ НЕЧЕТКОГО СОПОСТАВЛЕНИЯ (без изменений) ---
 def find_best_match(query, choices, threshold):
     """
     Находит наиболее подходящее совпадение для строки запроса (query) 
@@ -126,7 +123,7 @@ def find_best_match(query, choices, threshold):
         return result[0], result[1]
     return None, 0 # Если совпадение ниже порога, возвращаем None
 
-# --- БАЗА ДАННЫХ ---
+# --- БАЗА ДАННЫХ (без изменений) ---
 def get_connection():
     return sqlite3.connect(DB_FILE, check_same_thread=False)
 
@@ -140,17 +137,13 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS shipments 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, material_id INTEGER, qty REAL, user_name TEXT, arrival_date TIMESTAMP, store TEXT, doc_number TEXT, note TEXT, op_type TEXT)''')
     
-    try:
-        # ПРОВЕРКА И ДОБАВЛЕНИЕ СТОЛБЦОВ
-        c.execute("ALTER TABLE shipments ADD COLUMN store TEXT")
+    try: c.execute("ALTER TABLE shipments ADD COLUMN store TEXT")
     except sqlite3.OperationalError: pass 
-    try:
-        c.execute("ALTER TABLE shipments ADD COLUMN doc_number TEXT")
+    try: c.execute("ALTER TABLE shipments ADD COLUMN doc_number TEXT")
     except sqlite3.OperationalError: pass 
-    try:
-        c.execute("ALTER TABLE shipments ADD COLUMN note TEXT")
+    try: c.execute("ALTER TABLE shipments ADD COLUMN note TEXT")
     except sqlite3.OperationalError: pass 
-    try:
+    try: 
         c.execute("ALTER TABLE shipments ADD COLUMN op_type TEXT DEFAULT 'Приход'")
         c.execute("UPDATE shipments SET op_type = 'Приход' WHERE op_type IS NULL OR op_type = ''") 
     except sqlite3.OperationalError: pass
@@ -270,7 +263,7 @@ def undo_shipment(shipment_id, current_user):
     conn.close()
     return False
 
-# --- НОВАЯ ФУНКЦИЯ ОБРАТНОГО ВЫЗОВА ДЛЯ ST.FORM ---
+# --- НОВАЯ ФУНКЦИЯ ОБРАТНОГО ВЫЗОВА ДЛЯ ST.FORM (без изменений) ---
 def submit_entry_callback_form(material_id, qty, user, current_pid, store, doc_number, note):
     # 1. Проверка
     if user == "Выберите сотрудника..." or not user:
@@ -356,8 +349,6 @@ def compare_with_stock_excel(file_source, data_df):
     
     stock_df = pd.DataFrame()
     
-    # ... (Остальной код compare_with_stock_excel без изменений)
-    
     # 1. Загрузка файла по URL/Google Sheets/file_uploader
     if isinstance(file_source, str):
         original_url = file_source.strip()
@@ -391,7 +382,6 @@ def compare_with_stock_excel(file_source, data_df):
             return pd.DataFrame()
             
     else:
-        # Это не должно происходить в текущей логике, но для безопасности
         st.error("Непредвиденный источник файла.")
         return pd.DataFrame()
     
@@ -505,12 +495,13 @@ with st.sidebar:
     
     # --- ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ ---
     st.header("🌓 Настройка темы")
+    # Используем key, чтобы Streamlit знал, что это та же переменная
     new_mode = st.radio("Выберите режим:", ('Светлая', 'Темная'), key='theme_switcher', index=0 if st.session_state['theme_mode'] == 'Светлая' else 1)
     
     if new_mode != st.session_state['theme_mode']:
         st.session_state['theme_mode'] = new_mode
         create_config_file(new_mode)
-        st.rerun() # Используем st.rerun() для применения темы
+        st.rerun() 
     
     st.divider()
     
@@ -691,7 +682,7 @@ else:
                 
                 st.divider()
 
-                # --- ВВОД ПРИХОДА (ИСПРАВЛЕНА ОШИБКА РЕНДЕРИНГА) ---
+                # --- ВВОД ПРИХОДА (ИСПОЛЬЗУЕМ ST.FORM) ---
                 
                 # Инициализация ключей для автоматической очистки
                 if f'val_{pid}' not in st.session_state: st.session_state[f'val_{pid}'] = 0.0
@@ -714,26 +705,26 @@ else:
                         s_id = opts[s_name]
                         curr = data_df[data_df['id']==s_id].iloc[0]
                         
-                        # ИСПРАВЛЕНИЕ: Вывод плана и факта через st.markdown и st.info/st.warning
-                        # Это гарантирует правильное отображение и убирает ошибку HTML
+                        # Исправленное отображение плана/факта
                         st.markdown(f"**План:** `{curr['planned_qty']:.2f} {curr['unit']}`", unsafe_allow_html=True)
                         
-                        if curr['total'] >= curr['planned_qty']:
-                            # План выполнен или перевыполнен (ЗЕЛЕНЫЙ)
-                            st.success(f"Факт: **{curr['total']:.2f}**")
+                        if curr['total'] > curr['planned_qty']:
+                            # Перерасход (КРАСНЫЙ)
+                            st.error(f"Факт: **{curr['total']:.2f}** (Перерасход!)")
+                        elif curr['total'] == curr['planned_qty'] and curr['planned_qty'] > 0:
+                            # План выполнен (ЗЕЛЕНЫЙ)
+                            st.success(f"Факт: **{curr['total']:.2f}** (Выполнено)")
                         elif curr['total'] > 0:
                             # Принят, но не до конца (СИНИЙ/ИНФО)
                             st.info(f"Факт: **{curr['total']:.2f}**")
                         else:
-                            # Не начинали (СЕРЫЙ/ПРЕДУПРЕЖДЕНИЕ)
+                            # Не начинали (ЖЕЛТЫЙ/ПРЕДУПРЕЖДЕНИЕ)
                             st.warning(f"Факт: **{curr['total']:.2f}**")
 
                     with c2:
-                        # Используем специальный ключ для автоочистки
                         val = st.number_input("Кол-во", min_value=0.0, step=1.0, key=f'val_{pid}')
                     
                     with c3:
-                        # Используем специальный ключ для автоочистки
                         who = st.selectbox("Кто принял", WORKERS_LIST, key=f'who_{pid}')
                     
                     # 2. Дополнительные данные
@@ -759,9 +750,7 @@ else:
                     
                     # 4. Обработка отправки формы
                     if submit_button:
-                        # Вызываем callback
                         if submit_entry_callback_form(s_id, val, who, pid, store_input, doc_input, note_input):
-                            # Если успешно, сбрасываем поля для количества и сотрудника
                             st.session_state[f'val_{pid}'] = 0.0
                             st.session_state[f'who_{pid}'] = WORKERS_LIST[0]
                             st.rerun()
@@ -788,7 +777,6 @@ else:
                 st.divider()
                 
                 # --- БЛОК Сравнение с фактическими остатками (без изменений) ---
-                
                 with st.expander("🔍 **Сравнение с фактическими остатками склада (по URL)**"):
                     
                     st.info(f"Сравнение будет произведено с порогом сходства **{FUZZY_MATCH_THRESHOLD}%**.")
@@ -798,7 +786,6 @@ else:
                     current_url = st.session_state.get(STOCK_URL_KEY, "")
                     
                     with col_url:
-                        # Поле ввода, инициализируемое сохраненным значением
                         new_url = st.text_input(
                             "URL-ссылка на Excel/Google Таблицу", 
                             value=current_url, 
@@ -807,16 +794,15 @@ else:
                         )
                         
                     with col_btn:
-                        st.text(" ") # Визуальный отступ
+                        st.text(" ")
                         if st.button("💾 Сохранить и сравнить", key=f"save_compare_btn_{pid}", type="primary", use_container_width=True):
                             if new_url:
-                                st.session_state[STOCK_URL_KEY] = new_url # Сохраняем новую ссылку
+                                st.session_state[STOCK_URL_KEY] = new_url
                                 st.session_state['trigger_compare'] = new_url
                                 st.rerun()
                             else:
                                 st.error("Поле ссылки не может быть пустым.")
                     
-                    # --- КНОПКА ОБНОВЛЕНИЯ ПО СОХРАНЕННОЙ ССЫЛКЕ ---
                     if current_url:
                         st.markdown("---")
                         st.success(f"Текущая сохраненная ссылка: **{current_url[:60]}...**")
@@ -825,7 +811,6 @@ else:
                             st.session_state['trigger_compare'] = current_url
                             st.rerun()
 
-                    # --- ЛОГИКА ОТОБРАЖЕНИЯ РЕЗУЛЬТАТОВ (ВЫПОЛНЯЕТСЯ ПОСЛЕ RERUN) ---
                     if st.session_state.get('trigger_compare'):
                         url_to_use = st.session_state.pop('trigger_compare')
                         
@@ -895,7 +880,7 @@ else:
                             if ostalos > 0:
                                 st.info(summary)
                             elif ostalos < 0:
-                                st.warning(summary)
+                                st.error(summary) # Используем error для перерасхода
                             else:
                                 st.success(summary)
 
@@ -921,7 +906,7 @@ else:
                             return f"<span style='color: {color}; font-weight: bold;'>{qty_str}</span>"
 
                         
-                        # Улучшенное отображение истории (убраны ID, Ед. изм. добавлено в основную таблицу)
+                        # Улучшенное отображение истории 
                         display_df = hist_df.copy()
                         display_df['Кол-во'] = display_df.apply(format_qty_and_type, axis=1)
                         display_df = display_df.drop(columns=['id', 'Тип опер.'])
@@ -940,4 +925,3 @@ else:
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                             key=f"dl_{pid}"
                         )
-
