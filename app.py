@@ -21,36 +21,46 @@ FUZZY_MATCH_THRESHOLD = 80
 STOCK_URL_KEY = 'last_stock_url' 
 
 # Список сотрудников
-# ИСПРАВЛЕНИЕ: Фамилия изменена на Никонов Е.
 WORKERS_LIST = ["Выберите сотрудника...", "Хазбулат Р.", "Никулин Д.", "Волыкина Е.", "Ивонин К.", "Никонов Е.", "Губанов А.", "Яшковец В."] 
-# УСТАНОВКА НОВОЙ ССЫЛКИ НА ИЗОБРАЖЕНИЕ
-IMAGE_URL = "https://i.postimg.cc/8P1LJY52/photo-2025-11-20-23-07-29-(1).jpg"
+# Возвращена рабочая ссылка на изображение
+IMAGE_URL = "https://i.post.cc/26B6zY8b/photo-2025-11-20-23-07-29-1-2.jpg"
 
 
-# --- ФАЙЛ ТЕМЫ ---
-# Для красоты (должен быть создан файл .streamlit/config.toml)
-CONFIG_TOML_CONTENT = """
+# --- ФАЙЛ ТЕМЫ И ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ ---
+# Базовая конфигурация без фона
+CONFIG_TOML_CONTENT_BASE = """
 [theme]
 primaryColor="#007ACC" 
-backgroundColor="#FFFFFF" 
 secondaryBackgroundColor="#F0F2F6"
 textColor="#1A1A1A" 
 font="sans serif"
 """
 
-# Создание файла конфигурации для Streamlit (для красоты и удобства)
-def create_config_file():
+# Создание файла конфигурации и установка темы
+def create_config_file(mode):
     config_dir = ".streamlit"
     config_path = os.path.join(config_dir, "config.toml")
+    
+    # Установка цвета фона в зависимости от выбранного режима
+    if mode == 'Светлая':
+        theme_config = "backgroundColor='#FFFFFF'\n"
+    else: # Темная
+        theme_config = "backgroundColor='#1E1E1E'\n"
+        
+    final_content = CONFIG_TOML_CONTENT_BASE + theme_config
     
     if not os.path.exists(config_dir):
         os.makedirs(config_dir)
     
-    if not os.path.exists(config_path):
-        with open(config_path, "w") as f:
-            f.write(CONFIG_TOML_CONTENT)
-            
-create_config_file() # Выполняем при старте
+    with open(config_path, "w") as f:
+        f.write(final_content)
+        
+# Инициализация темы при первом запуске
+if 'theme_mode' not in st.session_state:
+    st.session_state['theme_mode'] = 'Светлая'
+    # Применяем тему, чтобы Streamlit знал о ней до reran
+    create_config_file('Светлая') 
+
 # --- КОНЕЦ ФАЙЛА ТЕМЫ ---
 
 
@@ -123,7 +133,6 @@ def get_connection():
 def init_db():
     conn = get_connection()
     c = conn.cursor()
-    # ... (Остальной код init_db без изменений)
     c.execute('''CREATE TABLE IF NOT EXISTS projects 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE)''')
     c.execute('''CREATE TABLE IF NOT EXISTS materials 
@@ -342,7 +351,7 @@ def get_data(project_id):
     
     return full, history
 
-# ФУНКЦИЯ ДЛЯ СОПОСТАВЛЕНИЯ
+# ФУНКЦИЯ ДЛЯ СОПОСТАВЛЕНИЯ (без изменений)
 def compare_with_stock_excel(file_source, data_df):
     
     stock_df = pd.DataFrame()
@@ -491,8 +500,20 @@ if not check_password():
 
 init_db()
 
-# --- САЙДБАР (С улучшенными иконками) ---
+# --- САЙДБАР (С улучшенными иконками и переключателем темы) ---
 with st.sidebar:
+    
+    # --- ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ ---
+    st.header("🌓 Настройка темы")
+    new_mode = st.radio("Выберите режим:", ('Светлая', 'Темная'), key='theme_switcher', index=0 if st.session_state['theme_mode'] == 'Светлая' else 1)
+    
+    if new_mode != st.session_state['theme_mode']:
+        st.session_state['theme_mode'] = new_mode
+        create_config_file(new_mode)
+        st.rerun() # Используем st.rerun() для применения темы
+    
+    st.divider()
+    
     st.header("📂 Управление объектами")
     new_name = st.text_input("Имя нового объекта")
     if st.button("➕ Добавить объект"):
@@ -506,7 +527,7 @@ with st.sidebar:
     
     st.divider()
     
-    # --- БЛОК РЕЗЕРВНОГО КОПИРОВАНИЯ ---
+    # --- БЛОК РЕЗЕРВНОГО КОПИРОВАНИЯ (без изменений) ---
     with st.expander("💾 Резервное копирование"):
         st.info("Для настройки еженедельных бэкапов используйте внешний планировщик задач (cron) на сервере.")
         st.write("**1. Скачать всю базу**")
@@ -530,7 +551,7 @@ with st.sidebar:
         
         if uploaded_db:
             st.warning("⚠️ Это действие полностью заменит текущие данные!")
-            if st.button("🔄 Заменить текущую базу", type="primary"):
+            if st.button("🔄 Заменить текущую базу", key="replace_db", type="primary"):
                 with open(DB_FILE, "wb") as f:
                     f.write(uploaded_db.getbuffer())
                 st.success("База данных восстановлена!")
@@ -559,7 +580,7 @@ else:
         st.session_state['current_pid'] = pid 
         
         with tab:
-            # --- СЕКЦИЯ НАСТРОЕК ---
+            # --- СЕКЦИЯ НАСТРОЕК (без изменений) ---
             with st.expander("⚙️ Настройки / Управление объектом", expanded=False):
                 # ... (Код настроек без изменений)
                 # --- БЛОК РЕДАКТИРОВАНИЯ НАЗВАНИЯ ---
@@ -621,7 +642,7 @@ else:
                             st.session_state[confirm_delete_key] = False
                             st.rerun()
             
-            # --- ДАННЫЕ ---
+            # --- ДАННЫЕ (без изменений) ---
             data_df, hist_df = get_data(pid)
             
             plan_upload_key = f"u_{pid}"
@@ -652,7 +673,7 @@ else:
                             st.rerun()
 
             if not data_df.empty:
-                # --- ОБЩАЯ ШКАЛА ---
+                # --- ОБЩАЯ ШКАЛА (без изменений) ---
                 st.divider()
                 total_planned = data_df['planned_qty'].sum()
                 total_shipped = data_df['total'].sum()
@@ -670,7 +691,7 @@ else:
                 
                 st.divider()
 
-                # --- ВВОД ПРИХОДА (ИСПОЛЬЗУЕМ ST.FORM ДЛЯ СТАБИЛЬНОСТИ И АВТООЧИСТКИ) ---
+                # --- ВВОД ПРИХОДА (ИСПРАВЛЕНА ОШИБКА РЕНДЕРИНГА) ---
                 
                 # Инициализация ключей для автоматической очистки
                 if f'val_{pid}' not in st.session_state: st.session_state[f'val_{pid}'] = 0.0
@@ -693,19 +714,20 @@ else:
                         s_id = opts[s_name]
                         curr = data_df[data_df['id']==s_id].iloc[0]
                         
-                        # ИСПРАВЛЕНИЕ: Используем HEX-коды для надежности, чтобы избежать ошибки HTML
-                        if curr['total'] > curr['planned_qty']:
-                            color_hex = "#DC3545" # Красный
-                        elif curr['total'] < curr['planned_qty']:
-                            color_hex = "#FFC107" # Оранжевый/Желтый
-                        else:
-                            color_hex = "#28A745" # Зеленый
-
-                        st.markdown(
-                            f"**План:** `{curr['planned_qty']:.2f} {curr['unit']}` | **Факт:** `<span style='color: {color_hex}; font-weight: bold;'>{curr['total']:.2f}</span>`", 
-                            unsafe_allow_html=True
-                        )
+                        # ИСПРАВЛЕНИЕ: Вывод плана и факта через st.markdown и st.info/st.warning
+                        # Это гарантирует правильное отображение и убирает ошибку HTML
+                        st.markdown(f"**План:** `{curr['planned_qty']:.2f} {curr['unit']}`", unsafe_allow_html=True)
                         
+                        if curr['total'] >= curr['planned_qty']:
+                            # План выполнен или перевыполнен (ЗЕЛЕНЫЙ)
+                            st.success(f"Факт: **{curr['total']:.2f}**")
+                        elif curr['total'] > 0:
+                            # Принят, но не до конца (СИНИЙ/ИНФО)
+                            st.info(f"Факт: **{curr['total']:.2f}**")
+                        else:
+                            # Не начинали (СЕРЫЙ/ПРЕДУПРЕЖДЕНИЕ)
+                            st.warning(f"Факт: **{curr['total']:.2f}**")
+
                     with c2:
                         # Используем специальный ключ для автоочистки
                         val = st.number_input("Кол-во", min_value=0.0, step=1.0, key=f'val_{pid}')
@@ -765,7 +787,7 @@ else:
                 
                 st.divider()
                 
-                # --- БЛОК Сравнение с фактическими остатками ---
+                # --- БЛОК Сравнение с фактическими остатками (без изменений) ---
                 
                 with st.expander("🔍 **Сравнение с фактическими остатками склада (по URL)**"):
                     
